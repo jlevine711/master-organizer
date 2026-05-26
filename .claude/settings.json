@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__4d2add4c-bd75-44d7-9946-6429d5df9419__*",
+      "mcp__5407b947-ddfa-4e38-968b-320f8989d99f__*",
+      "mcp__f4d0adde-bb07-4e68-bc6c-d7ab4b30a999__*",
+      "mcp__31fb401f-7142-4e4b-abfe-38eba609908f__*",
+      "Read",
+      "Write",
+      "Bash(date:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git diff:*)",
+      "Bash(mkdir:*)"
+    ]
+  }
+}
