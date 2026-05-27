@@ -17,13 +17,14 @@ Each morning it reads, dedupes, and prioritizes across **four connectors**:
 
 It groups everything by deal/topic (so *Shoppes at San Felipe* isn't repeated four times), surfaces
 **Top Priorities** with hard dates, separates **business vs. personal**, lists **who you're waiting
-on**, and then saves the result as a **Gmail draft** addressed to you. A markdown copy is archived to
+on**, and then **emails it to you from your own address**. A markdown copy is archived to
 `briefs/<date>.md`.
 
-> **Why a draft and not a sent email?** The Gmail connector can only *create drafts* — it has no send
-> capability. So each morning the brief lands in **Gmail → Drafts**. Read it there, or tap **Send** to
-> push it to your inbox (and phone notification). If a send-capable email tool is added later, switch
-> Step 7 of the command from `create_draft` to send.
+> **How it sends.** The Anthropic Gmail connector can only *create drafts*, so auto-send uses the
+> **Gmail API** (`scripts/send_brief.py`) to send from your own address — it lands in your inbox and
+> phone at 6 AM. This needs a one-time credential setup (below). **Until that's configured, the brief
+> automatically falls back to a Gmail draft** so you always get one; finish the setup to flip it to a
+> real send.
 
 ## Run it on demand
 
@@ -47,11 +48,44 @@ inside a session. Do this once:
 4. **Connectors:** keep **Google Calendar, Gmail, Granola, and Plaud** enabled (Surfe not needed).
 5. **Schedule:** Daily, **06:00**, timezone **America/Chicago**.
 6. **Permissions:** confirm they match `.claude/settings.json` (the four `mcp__…__*` connectors plus
-   `git`/`date`/`Write`) so the run is fully unattended with no approval prompts.
-7. Save. The first scheduled run will create tomorrow's draft.
+   `git`/`date`/`python3`/`Write`) so the run is fully unattended with no approval prompts.
+7. Save. The first scheduled run delivers tomorrow's brief.
 
 Each run shows up in your session list at claude.ai/code, so you can open the transcript to see
 exactly what it did.
+
+## One-time setup: enable auto-send (Gmail API)
+
+This lets the brief send from your own address. Do it once (≈15 min). Until then, the brief still
+arrives — as a Gmail draft.
+
+**1. Create OAuth credentials** in [Google Cloud Console](https://console.cloud.google.com), signed in
+as `jlevine@jalstrategies.com`:
+- Create/select a project → **APIs & Services → Library** → enable **Gmail API**.
+- **OAuth consent screen** → choose **Internal** (you're on Google Workspace, so the refresh token
+  won't expire) → add the scope `https://www.googleapis.com/auth/gmail.send`.
+- **Credentials → Create credentials → OAuth client ID → Web application.** Add the authorized
+  redirect URI `https://developers.google.com/oauthplayground`. Save the **Client ID** and **Client
+  secret**.
+
+**2. Mint a refresh token** (no code) via the [OAuth Playground](https://developers.google.com/oauthplayground):
+- Click the gear (top-right) → check **Use your own OAuth credentials** → paste your Client ID/secret.
+- In the left scope box enter `https://www.googleapis.com/auth/gmail.send` → **Authorize APIs** →
+  sign in as `jlevine@` and consent.
+- Click **Exchange authorization code for tokens** → copy the **Refresh token**.
+
+**3. Add three environment secrets** to the environment your Routine runs in (see
+[environment config](https://code.claude.com/docs/en/claude-code-on-the-web)):
+`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
+
+**4. Network:** make sure the environment's network policy allows HTTPS to `oauth2.googleapis.com` and
+`gmail.googleapis.com` (the default *Trusted* policy does).
+
+Test it anytime with:
+```bash
+python3 scripts/send_brief.py --subject "Test" --html-file /tmp/x.html --text-file /tmp/x.txt
+```
+(`SENT id=…` means it worked; exit code 2 means the secrets aren't set yet.)
 
 ## Customizing
 
@@ -67,5 +101,6 @@ CLAUDE.md                      # owner defaults, connectors, to-do rules, scope
 README.md                      # this file
 .claude/settings.json          # pre-authorized tools for unattended Routine runs
 .claude/commands/daily-brief.md# the Daily Brief procedure (/daily-brief)
+scripts/send_brief.py          # sends the brief from your own address (Gmail API)
 briefs/<YYYY-MM-DD>.md         # dated archive of each morning's brief
 ```

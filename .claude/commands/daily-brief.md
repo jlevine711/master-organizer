@@ -133,15 +133,29 @@ A minimal skeleton to follow (expand sections; keep all styles inline):
 
 Source-tag pill example (inline): `<span style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;background:#e2e8f0;border-radius:4px;padding:1px 6px;margin-right:6px;">Email</span>`
 
-## Step 7 — Create the draft
+## Step 7 — Deliver (send from Justin's own address; draft is the fallback)
 
-Call `mcp__5407b947-ddfa-4e38-968b-320f8989d99f__create_draft` with:
-- `to`: `["jlevine@jalstrategies.com"]`
-- `subject`: `"Daily Brief — <PRETTY date>"`  (e.g. `Daily Brief — Tuesday, May 26, 2026`)
-- `htmlBody`: the HTML from Step 6
-- `body`: the plain-text fallback from Step 6
+Primary path is to **send** the brief from Justin's own Gmail address via the Gmail API, so it lands
+in his inbox/phone at 6 AM. The Anthropic Gmail connector cannot send, so this uses
+`scripts/send_brief.py` (stdlib only) with OAuth creds from the environment
+(`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` — see README "Enable auto-send").
 
-Capture the returned draft id.
+1. Use the **Write tool** to save the bodies from Step 6 to temp files (cleaner than shell escaping):
+   `/tmp/daily-brief.html` (the HTML) and `/tmp/daily-brief.txt` (the plain text).
+2. Send:
+   ```bash
+   python3 scripts/send_brief.py \
+     --subject "Daily Brief — <PRETTY date>" \
+     --to jlevine@jalstrategies.com \
+     --html-file /tmp/daily-brief.html \
+     --text-file /tmp/daily-brief.txt
+   ```
+   - Exit `0` → it prints `SENT id=… threadId=…`; the brief is in his inbox + Sent. Done.
+   - Exit `2` (creds not set yet) or `3` (API/network error) → **fall back to a draft**: call
+     `mcp__5407b947-ddfa-4e38-968b-320f8989d99f__create_draft` with `to:["jlevine@jalstrategies.com"]`,
+     `subject:"Daily Brief — <PRETTY date>"`, `htmlBody:`<the HTML>, `body:`<the plain text>.
+
+Record whether the brief was **sent** or **drafted** for the Step 9 report.
 
 ## Step 8 — Archive to the repo
 
@@ -159,6 +173,7 @@ If nothing changed (re-run on the same day with identical content), skip the com
 
 ## Step 9 — Report back
 
-Print a 4–6 line summary to the session: the draft id, # meetings, # to-dos, the Top 3 priorities,
-and the archive path. Remind Justin the draft is in **Gmail → Drafts** (tap Send to push it to his
-inbox/phone).
+Print a 4–6 line summary to the session: whether the brief was **sent** (inbox) or **drafted**
+(fallback) and its id, # meetings, # to-dos, the Top 3 priorities, and the archive path. If it fell
+back to a draft because creds aren't set, remind Justin to finish the one-time auto-send setup in
+README (and that for now the brief is in **Gmail → Drafts**).

@@ -23,9 +23,12 @@ several connected tools.
 
 `Surfe` (prospect/business enrichment) is connected but **not used** by the Daily Brief.
 
-> **Gmail constraint:** the Gmail connector can **create drafts only** — it has no send tool. The
-> Daily Brief therefore writes a draft to Justin's own mailbox. He reads it in Drafts, or taps Send
-> to push it to his inbox/phone.
+> **Delivery:** the brief is **sent from Justin's own address via the Gmail API** (`scripts/send_brief.py`),
+> so it arrives in his inbox/phone at 6 AM. The Anthropic Gmail connector can only *draft*, not send,
+> so sending uses OAuth creds stored as environment secrets (`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`,
+> `GMAIL_REFRESH_TOKEN`; scope `gmail.send`). If those aren't set or the API call fails, the Daily
+> Brief **falls back to a Gmail draft** via the connector so a brief always exists. See README
+> "Enable auto-send" for the one-time credential setup.
 
 ## What counts as a "to-do"
 

@@ -8,6 +8,7 @@
       "Read",
       "Write",
       "Bash(date:*)",
+      "Bash(python3:*)",
       "Bash(git status:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
