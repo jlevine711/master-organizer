@@ -8,9 +8,10 @@ environment so nothing secret lives in the repo:
     (OAuth scope: https://www.googleapis.com/auth/gmail.send)
 
 Exit codes:
-    0  sent (or dry-run OK)
+    0  sent (or dry-run / --check-auth OK)
     2  credentials not configured  -> caller should fall back to a draft
     3  Gmail API / network error   -> caller should fall back to a draft
+    4  bad usage (missing --subject/--html-file/--text-file for a send)
 
 See README.md ("Enable auto-send") for how to mint the refresh token.
 """
@@ -71,16 +72,63 @@ def send_message(access_token, raw):
         return json.loads(resp.read().decode())
 
 
+def read_creds():
+    cid = os.environ.get("GMAIL_CLIENT_ID")
+    secret = os.environ.get("GMAIL_CLIENT_SECRET")
+    rtoken = os.environ.get("GMAIL_REFRESH_TOKEN")
+    missing = [name for name, val in (
+        ("GMAIL_CLIENT_ID", cid),
+        ("GMAIL_CLIENT_SECRET", secret),
+        ("GMAIL_REFRESH_TOKEN", rtoken),
+    ) if not val]
+    return cid, secret, rtoken, missing
+
+
+def check_auth():
+    """Verify the GMAIL_* creds mint an access token. Sends nothing, prints no secret."""
+    cid, secret, rtoken, missing = read_creds()
+    if missing:
+        print("ERROR: auto-send not configured; missing env var(s): "
+              + ", ".join(missing), file=sys.stderr)
+        return 2
+    try:
+        token = get_access_token(cid, secret, rtoken)
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="replace")
+        print(f"ERROR: token exchange HTTP {exc.code}: {detail}", file=sys.stderr)
+        return 3
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 3
+    print(f"AUTH OK: refresh token valid; minted an access token ({len(token)} chars). No email sent.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description="Send the Daily Brief via the Gmail API.")
-    ap.add_argument("--subject", required=True)
+    ap.add_argument("--subject")
     ap.add_argument("--to", default="jlevine@jalstrategies.com")
     ap.add_argument("--sender", default="jlevine@jalstrategies.com")
-    ap.add_argument("--html-file", required=True)
-    ap.add_argument("--text-file", required=True)
+    ap.add_argument("--html-file")
+    ap.add_argument("--text-file")
     ap.add_argument("--dry-run", action="store_true",
                     help="Build the MIME message but do not contact Google (no creds needed).")
+    ap.add_argument("--check-auth", action="store_true",
+                    help="Verify the GMAIL_* credentials mint an access token; send nothing.")
     args = ap.parse_args()
+
+    if args.check_auth:
+        return check_auth()
+
+    missing_args = [name for name, val in (
+        ("--subject", args.subject),
+        ("--html-file", args.html_file),
+        ("--text-file", args.text_file),
+    ) if not val]
+    if missing_args:
+        print("ERROR: missing required argument(s): " + ", ".join(missing_args),
+              file=sys.stderr)
+        return 4
 
     html = read_text(args.html_file)
     text = read_text(args.text_file)
@@ -91,14 +139,7 @@ def main():
         print(f"[dry-run] base64url raw length={len(raw)} chars; message is well-formed.")
         return 0
 
-    cid = os.environ.get("GMAIL_CLIENT_ID")
-    secret = os.environ.get("GMAIL_CLIENT_SECRET")
-    rtoken = os.environ.get("GMAIL_REFRESH_TOKEN")
-    missing = [name for name, val in (
-        ("GMAIL_CLIENT_ID", cid),
-        ("GMAIL_CLIENT_SECRET", secret),
-        ("GMAIL_REFRESH_TOKEN", rtoken),
-    ) if not val]
+    cid, secret, rtoken, missing = read_creds()
     if missing:
         print("ERROR: auto-send not configured; missing env var(s): "
               + ", ".join(missing), file=sys.stderr)
