@@ -17,8 +17,9 @@ Each morning it reads, dedupes, and prioritizes across **four connectors**:
 
 It groups everything by deal/topic (so *Shoppes at San Felipe* isn't repeated four times), surfaces
 **Top Priorities** with hard dates, separates **business vs. personal**, lists **who you're waiting
-on**, and then **emails it to you from your own address**. A markdown copy is archived to
-`briefs/<date>.md`.
+on**, suggests **follow-up thank-yous** for yesterday's external meetings (ready-to-send draft text +
+a one-tap Gmail reply/compose link), and then **emails it to you from your own address**. A markdown
+copy is archived to `briefs/<date>.md`.
 
 > **How it sends.** The Anthropic Gmail connector can only *create drafts*, so auto-send uses the
 > **Gmail API** (`scripts/send_brief.py`) to send from your own address — it lands in your inbox and

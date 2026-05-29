@@ -49,6 +49,15 @@ therapy / therapist, family mediation, medical / doctor, or a family member's na
 items, list only concrete forward-looking action items (e.g. "schedule next session") — keep
 sensitive content out of the brief. Everything else is business.
 
+## Follow-up thank-yous
+
+The brief also surfaces **suggested thank-you / follow-up notes** for the **external** meetings Justin
+had **yesterday** (prospects, brokers, lenders, partners, counsel) — addressed by first name, 2–3
+sentences, referencing a specific point or next step from the meeting, with a one-tap Gmail
+reply/compose link. These are **inline suggestions only** (no Gmail drafts are created). Internal-only
+and recurring meetings are skipped, and **personal** meetings (therapy, medical, family) never generate
+a thank-you.
+
 ## The Daily Brief
 
 The procedure lives in `.claude/commands/daily-brief.md` and runs via `/daily-brief`. It is the prompt

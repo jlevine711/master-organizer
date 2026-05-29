@@ -22,6 +22,7 @@ Run these and use the results throughout:
 TZ="America/Chicago" date "+%Y-%m-%d"            # TODAY (e.g. 2026-05-26)
 TZ="America/Chicago" date "+%A, %B %-d, %Y"      # PRETTY (e.g. Tuesday, May 26, 2026)
 TZ="America/Chicago" date -d "tomorrow" "+%Y-%m-%d"   # TOMORROW (window end)
+TZ="America/Chicago" date -d "yesterday" "+%Y-%m-%d"  # YESTERDAY (thank-you lookback)
 TZ="America/Chicago" date -d "7 days ago" "+%Y-%m-%d" # LOOKBACK start
 TZ="America/Chicago" date "+%Y-%m-%d %-I:%M %p %Z"    # NOW (footer timestamp)
 ```
@@ -74,6 +75,38 @@ to-do, with the thread link `https://mail.google.com/mail/u/0/#all/<threadId>`. 
 Justin already sent the last message (those may instead be **Waiting on** the other party).
 Use `get_thread` only when a snippet is too ambiguous to classify. Cap total Gmail to-dos at ~10.
 
+## Step 4b — Prior-day follow-up thank-yous
+
+Surface short, ready-to-send **thank-you / follow-up notes** for the **external** meetings Justin had
+**yesterday**, so he can fire them off this morning while they're fresh. These are suggestions rendered
+inline in the brief — **do not create Gmail drafts** for them.
+
+1. **Pull yesterday's meetings** from two sources (resolve against `<YESTERDAY>` from Step 0):
+   - **Calendar:** call `list_events` with `startTime=<YESTERDAY>T00:00:00`, `endTime=<TODAY>T00:00:00`,
+     `timeZone="America/Chicago"`, `orderBy="startTime"`. Keep each event's title, attendees (name +
+     email), and organizer.
+   - **Granola:** reuse the Step 2 results (or re-query for "yesterday") and keep the meetings dated
+     yesterday; use `get_meetings` by id only if you need attendee emails or a discussion highlight.
+2. **Decide who warrants a thank-you** — an attendee is **external** if their email domain is **not**
+   `jalstrategies.com` / `jalstrategicholdings.com` and they aren't Justin himself.
+   - **Include** meetings with at least one external attendee (prospects, brokers, lenders, partners,
+     counsel).
+   - **Skip** internal-only meetings, recurring team standups, and **all personal** meetings
+     (therapy/therapist, family mediation, medical/doctor, family-member names — see CLAUDE.md). Never
+     generate a thank-you for a personal meeting.
+   - **Dedupe:** one thank-you per person/meeting even if it shows up in both Calendar and Granola.
+3. **Draft each note** — 2–3 sentences, executive tone, no emojis, addressed by first name. Thank them
+   for their time, reference **one specific** point discussed or a next step / commitment from the
+   meeting (pull this from the Granola notes when available), and restate anything Justin said he'd
+   send or do. Keep it genuine and concrete, not boilerplate.
+4. **Give each an action link** so it's one tap to send:
+   - If an existing Gmail thread with that person is found (a quick `search_threads` on their email),
+     use the reply link `https://mail.google.com/mail/u/0/#all/<threadId>`.
+   - Otherwise a compose link: `https://mail.google.com/mail/?view=cm&to=<email>&su=<URL-encoded subject>`.
+
+If there were no external meetings yesterday, omit the thank-you section entirely (don't render an
+empty one).
+
 ## Step 5 — Synthesize, dedupe, prioritize, classify
 
 - **Dedupe by deal/topic.** Collapse the same matter that appears across connectors into one group
@@ -83,6 +116,8 @@ Use `get_thread` only when a snippet is too ambiguous to classify. Cap total Gma
   only Justin can make. Always surface the **date** for anything time-sensitive.
 - Split everything into **Business** and **Personal**. Keep a **Waiting on / follow up** list for
   items others owe.
+- **Thank-yous are their own section** (Step 4b). Don't also list "send thank-you to X" as a to-do —
+  the thank-you section already covers it.
 
 ## Step 6 — Render the email (inline-CSS HTML + plain-text fallback)
 
@@ -98,10 +133,13 @@ Section order:
 2. **At a glance** — meeting count, first meeting time, and any hard deadline landing today.
 3. **Today's schedule** — chronological rows: `time · title · join link · attendees`; flag conflicts/gaps.
 4. **Top priorities** — the ranked 3–6, each with its source tag, link, and any date in the accent color.
-5. **To-dos by deal/topic** — grouped; each line tagged with source pill(s) + link.
-6. **Waiting on / follow up** — short list of who owes what.
-7. **Personal** — clearly separated; forward-looking action items only.
-8. **Footer** — "Generated <NOW> · auto-draft from master-organizer."
+5. **Follow-up thank-yous** — from Step 4b; one block per external person/meeting Justin met yesterday:
+   recipient name + the meeting it references, the 2–3 sentence draft note (rendered so it's easy to
+   copy), and a "Reply"/"Compose" `<a href>` action link. Omit the whole section if there were none.
+6. **To-dos by deal/topic** — grouped; each line tagged with source pill(s) + link.
+7. **Waiting on / follow up** — short list of who owes what.
+8. **Personal** — clearly separated; forward-looking action items only.
+9. **Footer** — "Generated <NOW> · auto-draft from master-organizer."
 
 Also produce a **plain-text version** (same content, no markup) for the draft's `body` field so the
 email degrades gracefully.
