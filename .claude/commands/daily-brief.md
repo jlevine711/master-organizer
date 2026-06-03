@@ -26,6 +26,22 @@ TZ="America/Chicago" date -d "7 days ago" "+%Y-%m-%d" # LOOKBACK start
 TZ="America/Chicago" date "+%Y-%m-%d %-I:%M %p %Z"    # NOW (footer timestamp)
 ```
 
+### Archive health check (catch silent misses)
+
+Right after resolving dates, check whether any recent day's brief is missing from the archive — a
+day the Routine silently failed to run shows up here:
+
+```bash
+TZ="America/Chicago" python3 scripts/check_brief_health.py --days 7
+```
+
+- Exit `0` → no gaps; proceed normally.
+- Exit `1`/`2` → it prints the missing date(s) on stderr. Today's run will fill today's slot
+  regardless; **note any *earlier* missing days in the Step 9 report** so Justin knows the Routine
+  skipped them (point-in-time connector data means earlier days generally can't be reconstructed
+  faithfully, so flag rather than fabricate). This check is only meaningful when every brief lands
+  on one branch — see Step 8.
+
 ## Step 1 — Today's calendar (the "schedule")
 
 Call `mcp__4d2add4c-bd75-44d7-9946-6429d5df9419__list_events` with
@@ -171,9 +187,16 @@ git push -u origin HEAD
 
 If nothing changed (re-run on the same day with identical content), skip the commit.
 
+> **Keep every brief on ONE branch.** The archive and the Step 0 health check are only useful if all
+> briefs accumulate on a single branch. Scheduled runs default to a *fresh, throwaway branch per run*,
+> which scatters the archive and hides misses. **Pin the Routine to a fixed branch** (see README
+> "schedule it" — set the Branch field; don't leave it auto-generated). `git push -u origin HEAD` then
+> appends each day to that same branch.
+
 ## Step 9 — Report back
 
 Print a 4–6 line summary to the session: whether the brief was **sent** (inbox) or **drafted**
 (fallback) and its id, # meetings, # to-dos, the Top 3 priorities, and the archive path. If it fell
 back to a draft because creds aren't set, remind Justin to finish the one-time auto-send setup in
-README (and that for now the brief is in **Gmail → Drafts**).
+README (and that for now the brief is in **Gmail → Drafts**). If the Step 0 health check flagged any
+**earlier** missing days, call them out here so a skipped run doesn't go unnoticed.

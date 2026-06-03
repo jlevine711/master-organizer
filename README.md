@@ -43,8 +43,11 @@ inside a session. Do this once:
 
 1. Go to **https://claude.ai/code/routines** → **New routine**.
 2. **Prompt:** `/daily-brief`
-3. **Repository:** `jlevine711/master-organizer` — **Branch:** `claude/nifty-gates-oMuaa`
-   (or `main` once this is merged).
+3. **Repository:** `jlevine711/master-organizer` — **Branch:** pin a **fixed** branch (e.g. `main`).
+   ⚠️ **Do not leave the branch auto-generated.** If the Routine isn't pinned, each morning's run
+   lands on a throwaway per-run branch, which (a) scatters the `briefs/` archive across dozens of
+   branches and (b) means a day the job silently skips leaves no visible gap. Pin one branch so every
+   brief accumulates there and the health check (below) can spot a miss.
 4. **Connectors:** keep **Google Calendar, Gmail, Granola, and Plaud** enabled (Surfe not needed).
 5. **Schedule:** Daily, **06:00**, timezone **America/Chicago**.
 6. **Permissions:** confirm they match `.claude/settings.json` (the four `mcp__…__*` connectors plus
@@ -52,7 +55,21 @@ inside a session. Do this once:
 7. Save. The first scheduled run delivers tomorrow's brief.
 
 Each run shows up in your session list at claude.ai/code, so you can open the transcript to see
-exactly what it did.
+exactly what it did. **If a brief ever doesn't arrive, check that run's session first** — a missing
+session means the schedule didn't fire (a platform-side miss, not a code/credential fault); just run
+`/daily-brief` once to deliver that day.
+
+### Did it run every day? (health check)
+
+Each run starts by checking the archive for gaps. You can run the same check anytime:
+
+```bash
+python3 scripts/check_brief_health.py --days 7
+```
+
+It lists any of the last 7 days that have no `briefs/<date>.md` (exit `0` = all present, `1` = today
+missing, `2` = an earlier day missing). This only works when the Routine is pinned to one branch (see
+step 3) so all briefs live in the same place.
 
 ## One-time setup: enable auto-send (Gmail API)
 
@@ -102,5 +119,6 @@ README.md                      # this file
 .claude/settings.json          # pre-authorized tools for unattended Routine runs
 .claude/commands/daily-brief.md# the Daily Brief procedure (/daily-brief)
 scripts/send_brief.py          # sends the brief from your own address (Gmail API)
+scripts/check_brief_health.py  # flags days missing a brief archive (catches silent misses)
 briefs/<YYYY-MM-DD>.md         # dated archive of each morning's brief
 ```
